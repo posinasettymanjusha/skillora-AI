@@ -182,10 +182,7 @@ export const SUBTOPIC_CONTENT: Record<string, SubtopicContent> = {
       "Deep nesting reduces readability — prefer combining with 'and'.",
       "Logical operators can often replace one level of nesting."
     ],
-    commonMistakes: [
-      "Nesting too deeply, making code hard to follow.",
-      "Forgetting that indentation determines which block belongs to which if."
-    ],
+
     commonMistakes: [
       "Nesting too deeply when a single 'and' condition would suffice.",
       "Misaligning indentation so the wrong block is nested.",
