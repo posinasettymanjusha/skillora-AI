@@ -1,55 +1,86 @@
-# Skillora AI 🚀
+# 🚀 Skillora AI – Career & Learning Copilot
 
-## Your Personal AI Career Copilot
+<p align="center">
 
-Skillora AI is an AI-powered career guidance platform designed to help engineering students move from their current skill level toward job readiness.
+### 🎓 AI-Powered Career & Learning Copilot for Students
 
-The platform provides personalized career recommendations, skill-gap analysis, adaptive learning roadmaps, progress tracking, curated learning resources, free certification recommendations, and an AI-powered career mentor.
+**Turn your career goal into a personalized learning journey.**
 
-## ✨ Core Features
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Skillora%20AI-orange?style=for-the-badge)](https://skillora-ai-gules.vercel.app/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/posinasettymanjusha/skillora-AI)
+[![React](https://img.shields.io/badge/React-TypeScript-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
+[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
 
-* 🧭 Personalized Career Recommendations
-* 📊 Skill Gap Analysis
-* 🗺️ Adaptive Personalized Learning Roadmap
-* 📈 Progress Tracking
-* 📚 Curated Learning Resources & Free Certifications
-* 🤖 Skillora AI Career Mentor Chatbot
+</p>
 
-## 🎯 Target Users
+---
 
-BTech and engineering students who want guidance in choosing a career path, developing relevant skills, and becoming job-ready.
+## 🌟 Overview
 
-## 🛠️ Planned Tech Stack
+**Skillora AI** is an AI-powered career and learning copilot designed to help students bridge the gap between their **career goals** and the **skills required to achieve them**.
 
-### Frontend
+Instead of simply recommending courses or career information, Skillora creates a structured learning journey that connects:
 
-* React
-* TypeScript
-* Tailwind CSS
+> 🎯 **Career Goal**  
+> ↓  
+> 🧠 **Required Skills**  
+> ↓  
+> 🔍 **Skill Gap Analysis**  
+> ↓  
+> 🗺️ **Personalized Learning Roadmap**  
+> ↓  
+> 📚 **Topic-Based Learning**  
+> ↓  
+> 📝 **Knowledge Assessment**  
+> ↓  
+> 📈 **Progress Tracking**
 
-### Backend
+The goal is to transform career preparation from a generic process into a **personalized, structured, and measurable learning experience**.
 
-* Python
-* FastAPI
+---
 
-### Database & Authentication
+## ✨ Key Features
 
-* Supabase
-* PostgreSQL
+### 🎯 Personalized Career Planning
 
-### AI
+Students can select their target career and follow a structured roadmap designed around the skills associated with that career.
 
-* Gemini API
+- 🎓 Career-focused learning paths
+- 🧭 Structured career preparation
+- 🔄 Reusable roadmap architecture
+- 📌 Career-specific skill requirements
 
-### Deployment
+---
 
-* Vercel
-* GitHub
+### 🔍 Skill-Gap Analysis
 
-## 🔄 Core User Flow
+Skillora helps students understand the difference between their current abilities and the skills required for their target career.
 
-Signup/Login → Profile Setup → Add Skills & Interests → Career Recommendations → Select Target Role → Skill Gap Analysis → Personalized Roadmap → Resources & Certifications → Progress Tracking → AI Career Mentor
+- 🧠 Identify required skills
+- 📊 Understand skill gaps
+- 🎯 Focus learning on important areas
+- 🗺️ Connect skill gaps with the learning roadmap
 
-## 📌 Project Status
+---
 
-🚧 Currently under development
+### 🗺️ Structured Learning Roadmaps
+
+Every career follows a consistent learning structure:
+
+```text
+Career
+   │
+   ├── Phase
+   │     │
+   │     ├── Topic
+   │     │     │
+   │     │     ├── Subtopic
+   │     │     │
+   │     │     ├── Learning Content
+   │     │     │
+   │     │     └── Quiz
+   │     │
+   │     └── Completion
+   │
+   └── Progress Tracking
