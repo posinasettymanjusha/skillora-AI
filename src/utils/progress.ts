@@ -72,29 +72,53 @@ export function calculateTopicLearningProgress(
   progress: TopicProgress
 ): number {
   if (topic.subtopics.length === 0) {
-    // No subtopics — base on resources + practice
-    const resourceRatio = topic.resourceIds.length > 0
-      ? progress.resourcesCompleted.length / topic.resourceIds.length
-      : 0;
-    const practiceRatio = topic.practiceItemIds.length > 0
-      ? progress.practiceCompleted.length / topic.practiceItemIds.length
-      : 0;
-    return Math.round((resourceRatio * 0.6 + practiceRatio * 0.4) * 100);
+    // No subtopics — base on resources + practice.
+    // If there are no resources or practice items, progress remains 0.
+    const resourceRatio =
+      topic.resourceIds.length > 0
+        ? progress.resourcesCompleted.length / topic.resourceIds.length
+        : 0;
+
+    const practiceRatio =
+      topic.practiceItemIds.length > 0
+        ? progress.practiceCompleted.length / topic.practiceItemIds.length
+        : 0;
+
+    return Math.min(
+      100,
+      Math.round((resourceRatio * 0.6 + practiceRatio * 0.4) * 100)
+    );
   }
 
   // Subtopic progress: completed subtopics / total subtopics
-  const subtopicRatio = progress.subtopicsCompleted.length / topic.subtopics.length;
+  const subtopicRatio =
+    progress.subtopicsCompleted.length / topic.subtopics.length;
+
   const subtopicProgress = Math.round(subtopicRatio * 100);
 
-  const resourceRatio = topic.resourceIds.length > 0
-    ? progress.resourcesCompleted.length / topic.resourceIds.length
-    : 1; // if no resources, don't penalize
-  const practiceRatio = topic.practiceItemIds.length > 0
-    ? progress.practiceCompleted.length / topic.practiceItemIds.length
-    : 1; // if no practice, don't penalize
+  // Resources only count when they actually exist.
+  // Missing resources must NOT be treated as completed.
+  const resourceRatio =
+    topic.resourceIds.length > 0
+      ? progress.resourcesCompleted.length / topic.resourceIds.length
+      : 0;
 
-  // Weighted: 60% subtopics, 25% resources, 15% practice
-  const combined = subtopicProgress * 0.6 + resourceRatio * 100 * 0.25 + practiceRatio * 100 * 0.15;
+  // Practice only counts when practice items actually exist.
+  // Missing practice must NOT be treated as completed.
+  const practiceRatio =
+    topic.practiceItemIds.length > 0
+      ? progress.practiceCompleted.length / topic.practiceItemIds.length
+      : 0;
+
+  // Weighted:
+  // 60% subtopics
+  // 25% resources
+  // 15% practice
+  const combined =
+    subtopicProgress * 0.6 +
+    resourceRatio * 100 * 0.25 +
+    practiceRatio * 100 * 0.15;
+
   return Math.min(100, Math.round(combined));
 }
 
@@ -120,9 +144,11 @@ export function determineTopicStatus(
 
   // Has quiz attempts
   const latestScore = progress.latestScore ?? 0;
+
   if (latestScore >= MASTERY_THRESHOLDS.STRONG) {
     return 'Mastered';
   }
+
   if (latestScore < PASSING_SCORE) {
     return 'Needs Revision';
   }
@@ -148,6 +174,7 @@ export function calculatePhaseProgress(
     // No detailed topics — fall back to old roadmap progress
     const oldStatus = profile.roadmapProgress[phase.id] || 'Locked';
     const isCompleted = oldStatus === 'Completed';
+
     return {
       learningProgress: isCompleted ? 100 : 0,
       knowledgeMastery: isCompleted ? 100 : 0,
@@ -173,24 +200,36 @@ export function calculatePhaseProgress(
     totalWeight += topic.weight;
     completedWeight += (learningProgress / 100) * topic.weight;
 
-    if (status === 'Mastered' || (learningProgress >= 100 && progress.latestScore !== null && progress.latestScore >= PASSING_SCORE)) {
+    if (
+      status === 'Mastered' ||
+      (learningProgress >= 100 &&
+        progress.latestScore !== null &&
+        progress.latestScore >= PASSING_SCORE)
+    ) {
       topicsCompleted++;
     }
 
     if (progress.latestScore !== null) {
       masterySum += progress.latestScore;
       masteryCount++;
+
       if (progress.latestScore < PASSING_SCORE) {
         weakTopics++;
       }
     }
   }
 
-  const rawLearningProgress = Math.round((completedWeight / totalWeight) * 100);
-  const rawKnowledgeMastery = masteryCount > 0 ? Math.round(masterySum / masteryCount) : 0;
+  const rawLearningProgress =
+    totalWeight > 0
+      ? Math.round((completedWeight / totalWeight) * 100)
+      : 0;
+
+  const rawKnowledgeMastery =
+    masteryCount > 0 ? Math.round(masterySum / masteryCount) : 0;
 
   // Determine phase status
   let status: RoadmapStatus = 'Upcoming';
+
   if (profile.roadmapProgress[phase.id] === 'Locked') {
     status = 'Locked';
   } else if (rawLearningProgress === 0) {
@@ -205,7 +244,8 @@ export function calculatePhaseProgress(
     status = 'In Progress';
   }
 
-  // Locked phases must report zero progress — the user has not started them.
+  // Locked phases must report zero progress —
+  // the user has not started them.
   if (status === 'Locked') {
     return {
       learningProgress: 0,
@@ -245,6 +285,7 @@ export function calculateOverallProgress(profile: StudentProfile): {
   }[];
 } {
   const phases = getRoadmap(profile.targetRoleId || '');
+
   if (phases.length === 0) {
     return {
       overallProgress: 0,
@@ -264,15 +305,19 @@ export function calculateOverallProgress(profile: StudentProfile): {
 
   const phaseBreakdown = phases.map((phase) => {
     const result = calculatePhaseProgress(profile, phase);
+
     totalHours += phase.estimatedHours;
-    completedHours += (result.learningProgress / 100) * phase.estimatedHours;
+    completedHours +=
+      (result.learningProgress / 100) * phase.estimatedHours;
 
     if (result.knowledgeMastery > 0) {
       totalMasterySum += result.knowledgeMastery;
       totalMasteryCount++;
     }
 
-    if (result.status === 'Completed') completedPhases++;
+    if (result.status === 'Completed') {
+      completedPhases++;
+    }
 
     return {
       phase,
@@ -285,9 +330,17 @@ export function calculateOverallProgress(profile: StudentProfile): {
     };
   });
 
-  const overallProgress = Math.round((completedHours / totalHours) * 100);
+  const overallProgress =
+    totalHours > 0
+      ? Math.round((completedHours / totalHours) * 100)
+      : 0;
+
   const learningProgress = overallProgress;
-  const knowledgeMastery = totalMasteryCount > 0 ? Math.round(totalMasterySum / totalMasteryCount) : 0;
+
+  const knowledgeMastery =
+    totalMasteryCount > 0
+      ? Math.round(totalMasterySum / totalMasteryCount)
+      : 0;
 
   return {
     overallProgress,
@@ -315,17 +368,28 @@ export function identifyWeakTopics(profile: StudentProfile): WeakTopic[] {
 
   for (const phase of phases) {
     const topics = getTopicsForPhase(phase.id);
+
     for (const topic of topics) {
       const progress = getTopicProgress(profile, topic.id);
-      if (progress.latestScore !== null && progress.latestScore < PASSING_SCORE) {
-        const latestAttempt = progress.quizAttempts[progress.quizAttempts.length - 1];
+
+      if (
+        progress.latestScore !== null &&
+        progress.latestScore < PASSING_SCORE
+      ) {
+        const latestAttempt =
+          progress.quizAttempts[progress.quizAttempts.length - 1];
+
         weakTopics.push({
           topic,
           score: progress.latestScore,
           masteryLevel: calculateMastery(progress.latestScore),
           phase,
           weakSubtopicIds: latestAttempt?.weakSubtopicIds || [],
-          recommendation: generateTopicRecommendation(topic, progress.latestScore, latestAttempt?.weakSubtopicIds || []),
+          recommendation: generateTopicRecommendation(
+            topic,
+            progress.latestScore,
+            latestAttempt?.weakSubtopicIds || []
+          ),
         });
       }
     }
@@ -345,19 +409,37 @@ export function generateTopicRecommendation(
     .map((s) => s.name);
 
   if (score < 40) {
-    return `You should revisit ${topic.name} before moving forward. ${weakSubtopics.length > 0 ? `Focus especially on: ${weakSubtopics.join(', ')}.` : 'Review the learning resources and practice exercises thoroughly.'} Take your time to build a solid foundation here — this topic is important for your overall progress.`;
+    return `You should revisit ${topic.name} before moving forward. ${
+      weakSubtopics.length > 0
+        ? `Focus especially on: ${weakSubtopics.join(', ')}.`
+        : 'Review the learning resources and practice exercises thoroughly.'
+    } Take your time to build a solid foundation here — this topic is important for your overall progress.`;
   }
 
   if (score < 60) {
-    return `Your ${topic.name} fundamentals need reinforcement. ${weakSubtopics.length > 0 ? `Review these areas: ${weakSubtopics.join(', ')}.` : 'Go through the learning resources again and practice more.'} Try retaking the quiz after reviewing — you're close to passing!`;
+    return `Your ${topic.name} fundamentals need reinforcement. ${
+      weakSubtopics.length > 0
+        ? `Review these areas: ${weakSubtopics.join(', ')}.`
+        : 'Go through the learning resources again and practice more.'
+    } Try retaking the quiz after reviewing — you're close to passing!`;
   }
 
-  return `You're making progress with ${topic.name}, but there's room for improvement. ${weakSubtopics.length > 0 ? `Brush up on: ${weakSubtopics.join(', ')}.` : 'A quick review of the key concepts should help you reach mastery.'}`;
+  return `You're making progress with ${topic.name}, but there's room for improvement. ${
+    weakSubtopics.length > 0
+      ? `Brush up on: ${weakSubtopics.join(', ')}.`
+      : 'A quick review of the key concepts should help you reach mastery.'
+  }`;
 }
 
 // ── Get next recommended action for the student ──
 export interface NextAction {
-  type: 'learn' | 'practice' | 'quiz' | 'review' | 'start-phase' | 'select-role';
+  type:
+    | 'learn'
+    | 'practice'
+    | 'quiz'
+    | 'review'
+    | 'start-phase'
+    | 'select-role';
   topicId?: string;
   phaseId?: string;
   title: string;
@@ -373,7 +455,8 @@ export function getNextAction(profile: StudentProfile): NextAction {
     return {
       type: 'select-role',
       title: 'Select a career goal',
-      description: 'Choose a target role to unlock your personalized learning roadmap.',
+      description:
+        'Choose a target role to unlock your personalized learning roadmap.',
       actionLabel: 'View Recommendations',
       actionLink: '/app/recommendations',
     };
@@ -381,8 +464,10 @@ export function getNextAction(profile: StudentProfile): NextAction {
 
   // Check for weak topics first — recommend review
   const weakTopics = identifyWeakTopics(profile);
+
   if (weakTopics.length > 0) {
     const wt = weakTopics[0];
+
     return {
       type: 'review',
       topicId: wt.topic.id,
@@ -397,6 +482,7 @@ export function getNextAction(profile: StudentProfile): NextAction {
   // Find the first topic that needs work
   for (const phase of phases) {
     const topics = getTopicsForPhase(phase.id);
+
     for (const topic of topics) {
       const progress = getTopicProgress(profile, topic.id);
       const status = determineTopicStatus(topic, progress);
@@ -454,38 +540,50 @@ export function getNextAction(profile: StudentProfile): NextAction {
   return {
     type: 'start-phase',
     title: 'All caught up!',
-    description: 'You\'ve completed all available topics. Explore more resources or start building projects.',
+    description:
+      "You've completed all available topics. Explore more resources or start building projects.",
     actionLabel: 'View Resources',
     actionLink: '/app/resources',
   };
 }
 
 // ── Calculate career readiness breakdown ──
-export function calculateReadinessBreakdown(profile: StudentProfile): ReadinessBreakdown {
+export function calculateReadinessBreakdown(
+  profile: StudentProfile
+): ReadinessBreakdown {
   const summary = getSkillGapSummary(profile);
-  const { overallProgress, knowledgeMastery } = calculateOverallProgress(profile);
+  const { overallProgress, knowledgeMastery } =
+    calculateOverallProgress(profile);
 
   const skillCoverage = summary.coverage;
   const learningProgress = overallProgress;
   const knowledgeMasteryScore = knowledgeMastery;
 
   // Project experience: based on completed projects + practice items completed
-  const practiceCompleted = Object.values(profile.topicProgress || {}).reduce(
-    (sum, tp) => sum + tp.practiceCompleted.length,
-    0
+  const practiceCompleted = Object.values(
+    profile.topicProgress || {}
+  ).reduce((sum, tp) => sum + tp.practiceCompleted.length, 0);
+
+  const projectExperience = Math.min(
+    100,
+    Math.round(
+      profile.completedProjects.length * 20 + practiceCompleted * 5
+    )
   );
-  const projectExperience = Math.min(100, Math.round((profile.completedProjects.length * 20 + practiceCompleted * 5)));
 
   // Certification progress
-  const certProgress = Math.min(100, profile.earnedCertifications.length * 25);
+  const certProgress = Math.min(
+    100,
+    profile.earnedCertifications.length * 25
+  );
 
   // Overall: weighted average
   const overall = Math.round(
-    skillCoverage * 0.30 +
-    knowledgeMasteryScore * 0.30 +
-    learningProgress * 0.20 +
-    projectExperience * 0.10 +
-    certProgress * 0.10
+    skillCoverage * 0.3 +
+      knowledgeMasteryScore * 0.3 +
+      learningProgress * 0.2 +
+      projectExperience * 0.1 +
+      certProgress * 0.1
   );
 
   return {
@@ -499,13 +597,19 @@ export function calculateReadinessBreakdown(profile: StudentProfile): ReadinessB
 }
 
 // ── Get quiz history for a topic ──
-export function getQuizHistory(profile: StudentProfile, topicId: string): QuizAttempt[] {
+export function getQuizHistory(
+  profile: StudentProfile,
+  topicId: string
+): QuizAttempt[] {
   const progress = getTopicProgress(profile, topicId);
   return progress.quizAttempts;
 }
 
 // ── Get quiz improvement ──
-export function getQuizImprovement(profile: StudentProfile, topicId: string): {
+export function getQuizImprovement(
+  profile: StudentProfile,
+  topicId: string
+): {
   firstScore: number | null;
   latestScore: number | null;
   bestScore: number | null;
@@ -513,8 +617,15 @@ export function getQuizImprovement(profile: StudentProfile, topicId: string): {
   attemptCount: number;
 } {
   const history = getQuizHistory(profile, topicId);
+
   if (history.length === 0) {
-    return { firstScore: null, latestScore: null, bestScore: null, improvement: null, attemptCount: 0 };
+    return {
+      firstScore: null,
+      latestScore: null,
+      bestScore: null,
+      improvement: null,
+      attemptCount: 0,
+    };
   }
 
   const firstScore = history[0].score;
@@ -522,22 +633,41 @@ export function getQuizImprovement(profile: StudentProfile, topicId: string): {
   const bestScore = Math.max(...history.map((a) => a.score));
   const improvement = latestScore - firstScore;
 
-  return { firstScore, latestScore, bestScore, improvement, attemptCount: history.length };
+  return {
+    firstScore,
+    latestScore,
+    bestScore,
+    improvement,
+    attemptCount: history.length,
+  };
 }
 
 // ── Get all topics with their progress for a phase ──
-export function getTopicsWithProgress(profile: StudentProfile, phaseId: string): {
+export function getTopicsWithProgress(
+  profile: StudentProfile,
+  phaseId: string
+): {
   topic: RoadmapTopic;
   progress: TopicProgress;
   learningProgress: number;
   status: TopicLearningStatus;
 }[] {
   const topics = getTopicsForPhase(phaseId);
+
   return topics.map((topic) => {
     const progress = getTopicProgress(profile, topic.id);
-    const learningProgress = calculateTopicLearningProgress(topic, progress);
+    const learningProgress = calculateTopicLearningProgress(
+      topic,
+      progress
+    );
     const status = determineTopicStatus(topic, progress);
-    return { topic, progress, learningProgress, status };
+
+    return {
+      topic,
+      progress,
+      learningProgress,
+      status,
+    };
   });
 }
 
@@ -550,6 +680,7 @@ export function getTotalTopicsCount(profile: StudentProfile): {
   needsRevision: number;
 } {
   const phases = getRoadmap(profile.targetRoleId || '');
+
   let total = 0;
   let started = 0;
   let completed = 0;
@@ -558,34 +689,76 @@ export function getTotalTopicsCount(profile: StudentProfile): {
 
   for (const phase of phases) {
     const topics = getTopicsForPhase(phase.id);
+
     for (const topic of topics) {
       total++;
+
       const progress = getTopicProgress(profile, topic.id);
       const status = determineTopicStatus(topic, progress);
 
-      if (status !== 'Not Started') started++;
-      if (status === 'Mastered') mastered++;
-      if (status === 'Needs Revision') needsRevision++;
-      if (status === 'Mastered' || (progress.learningProgress >= 100 && progress.latestScore !== null && progress.latestScore >= PASSING_SCORE)) {
+      if (status !== 'Not Started') {
+        started++;
+      }
+
+      if (status === 'Mastered') {
+        mastered++;
+      }
+
+      if (status === 'Needs Revision') {
+        needsRevision++;
+      }
+
+      if (
+        status === 'Mastered' ||
+        (progress.learningProgress >= 100 &&
+          progress.latestScore !== null &&
+          progress.latestScore >= PASSING_SCORE)
+      ) {
         completed++;
       }
     }
   }
 
-  return { total, started, completed, mastered, needsRevision };
+  return {
+    total,
+    started,
+    completed,
+    mastered,
+    needsRevision,
+  };
 }
 
 // ── Get strong topics ──
-export function identifyStrongTopics(profile: StudentProfile): { topic: RoadmapTopic; score: number; phase: RoadmapPhase }[] {
+export function identifyStrongTopics(
+  profile: StudentProfile
+): {
+  topic: RoadmapTopic;
+  score: number;
+  phase: RoadmapPhase;
+}[] {
   const phases = getRoadmap(profile.targetRoleId || '');
-  const strong: { topic: RoadmapTopic; score: number; phase: RoadmapPhase }[] = [];
+
+  const strong: {
+    topic: RoadmapTopic;
+    score: number;
+    phase: RoadmapPhase;
+  }[] = [];
 
   for (const phase of phases) {
     const topics = getTopicsForPhase(phase.id);
+
     for (const topic of topics) {
       const progress = getTopicProgress(profile, topic.id);
-      if (progress.latestScore !== null && progress.latestScore >= MASTERY_THRESHOLDS.STRONG) {
-        strong.push({ topic, score: progress.latestScore, phase });
+
+      if (
+        progress.latestScore !== null &&
+        progress.latestScore >= MASTERY_THRESHOLDS.STRONG
+      ) {
+        strong.push({
+          topic,
+          score: progress.latestScore,
+          phase,
+        });
       }
     }
   }
@@ -594,24 +767,38 @@ export function identifyStrongTopics(profile: StudentProfile): { topic: RoadmapT
 }
 
 // ── Check if a phase is unlocked ──
-export function isPhaseUnlocked(profile: StudentProfile, phase: RoadmapPhase, allPhases: RoadmapPhase[]): boolean {
+export function isPhaseUnlocked(
+  profile: StudentProfile,
+  phase: RoadmapPhase,
+  allPhases: RoadmapPhase[]
+): boolean {
   if (phase.prerequisites.length === 0) return true;
 
   for (const prereqId of phase.prerequisites) {
     const prereqPhase = allPhases.find((p) => p.id === prereqId);
+
     if (!prereqPhase) continue;
 
-    const prereqResult = calculatePhaseProgress(profile, prereqPhase);
+    const prereqResult = calculatePhaseProgress(
+      profile,
+      prereqPhase
+    );
+
     // Phase unlocks when prerequisite has at least 80% learning progress
     // and no critical weak topics (all quiz scores >= passing)
-    if (prereqResult.learningProgress < 80) return false;
+    if (prereqResult.learningProgress < 80) {
+      return false;
+    }
   }
 
   return true;
 }
 
 // ── Get completed subtopics for a topic ──
-export function getCompletedSubtopics(profile: StudentProfile, topicId: string): string[] {
+export function getCompletedSubtopics(
+  profile: StudentProfile,
+  topicId: string
+): string[] {
   const progress = getTopicProgress(profile, topicId);
   return progress.subtopicsCompleted || [];
 }
@@ -622,5 +809,8 @@ export function calculateSubtopicProgress(
   completedSubtopics: number
 ): number {
   if (totalSubtopics === 0) return 0;
-  return Math.round((completedSubtopics / totalSubtopics) * 100);
+
+  return Math.round(
+    (completedSubtopics / totalSubtopics) * 100
+  );
 }
